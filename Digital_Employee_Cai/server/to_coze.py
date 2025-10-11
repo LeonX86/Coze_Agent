@@ -26,7 +26,7 @@ async def get_history(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 之前的产品列表保持不变
+# 产品列表
 product_names = [
     "兰风 春日清荷口红",
     "兰风 春日桃花口红",
