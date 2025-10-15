@@ -145,70 +145,70 @@ async def main(args: Args) -> Output:
             # 组合成字符串
             result_str = f"（{filtered_count}）{project_name}\n最新进展记录：{latest_text}\n上月进展记录：{last_month_text}"
             result_list.append(result_str)
-        
-        # 统计所有项目（不限时间）
-        project_type = fields.get('项目类型', '')
-        project_attr = fields.get('项目属性', '')
-        tech_direction = fields.get('技术方向', '')
-        dept_list = fields.get('归属', [])
-        dept = extract_text(dept_list) if dept_list else '其他'
-        progress = fields.get('进展', '')
-        
-        # 映射部门名称
-        dept_mapping = {
-            '战客': '战客', '锡山': '锡山', '惠山': '惠山', '数智化': '数智化',
-            '网络': '网络', '工程': '工程', '综合': '综合', '市场': '市场',
-            '工会': '工会', '一线网格': '一线网格', '一线': '一线网格',
-            '品管': '品管', '财务': '财务'
-        }
-        mapped_dept = dept_mapping.get(dept, '其他')
-        
-        if project_type in ['售中', '售前', '开发']:
-            total_count += 1
             
-            # 统计各维度数据
-            if project_type == '售中':
-                sell_count += 1
-            elif project_type == '售前':
-                presale_count += 1
-            elif project_type == '开发':
-                dev_count += 1
+            # 统计上个月更新的项目
+            project_type = fields.get('项目类型', '')
+            project_attr = fields.get('项目属性', '')
+            tech_direction = fields.get('技术方向', '')
+            dept_list = fields.get('归属', [])
+            dept = extract_text(dept_list) if dept_list else '其他'
+            progress = fields.get('进展', '')
             
-            if progress == '已完成':
-                completed_count += 1
-            elif progress == '进行中':
-                ongoing_count += 1
-            
-            if project_attr == '对外':
-                external_count += 1
-            elif project_attr == '对内':
-                internal_count += 1
-            
-            if '大模型' in tech_direction or 'AI' in tech_direction:
-                ai_count += 1
-            elif 'RPA' in tech_direction:
-                rpa_count += 1
-            
-            # 更新统计表
-            if project_type in stats and mapped_dept in stats[project_type]:
-                stats[project_type][mapped_dept] += 1
-                stats['合计'][mapped_dept] += 1
-            
-            # 添加到项目/需求列表
-            project_info = {
-                '类型': project_type,
-                '技术方向': tech_direction,
-                '内外': '对外' if project_attr == '对外' else '对内',
-                '支撑部门': mapped_dept,
-                '项目名称': extract_text(fields.get('项目名称', [])),
-                '当前进度': progress
+            # 映射部门名称
+            dept_mapping = {
+                '战客': '战客', '锡山': '锡山', '惠山': '惠山', '数智化': '数智化',
+                '网络': '网络', '工程': '工程', '综合': '综合', '市场': '市场',
+                '工会': '工会', '一线网格': '一线网格', '一线': '一线网格',
+                '品管': '品管', '财务': '财务'
             }
+            mapped_dept = dept_mapping.get(dept, '其他')
             
-            if project_type in ['售中', '售前']:
-                projects.append(project_info)
-            elif project_type == '开发':
-                project_info['需求名称'] = project_info['项目名称']
-                requirements.append(project_info)
+            if project_type in ['售中', '售前', '开发']:
+                total_count += 1
+                
+                # 统计各维度数据
+                if project_type == '售中':
+                    sell_count += 1
+                elif project_type == '售前':
+                    presale_count += 1
+                elif project_type == '开发':
+                    dev_count += 1
+                
+                if progress == '已完成':
+                    completed_count += 1
+                elif progress == '进行中':
+                    ongoing_count += 1
+                
+                if project_attr == '对外':
+                    external_count += 1
+                elif project_attr == '对内':
+                    internal_count += 1
+                
+                if '大模型' in tech_direction or 'AI' in tech_direction:
+                    ai_count += 1
+                elif 'RPA' in tech_direction:
+                    rpa_count += 1
+                
+                # 更新统计表
+                if project_type in stats and mapped_dept in stats[project_type]:
+                    stats[project_type][mapped_dept] += 1
+                    stats['合计'][mapped_dept] += 1
+                
+                # 添加到项目/需求列表
+                project_info = {
+                    '类型': project_type,
+                    '技术方向': tech_direction,
+                    '内外': '对外' if project_attr == '对外' else '对内',
+                    '支撑部门': mapped_dept,
+                    '项目名称': extract_text(fields.get('项目名称', [])),
+                    '当前进度': progress
+                }
+                
+                if project_type in ['售中', '售前']:
+                    projects.append(project_info)
+                elif project_type == '开发':
+                    project_info['需求名称'] = project_info['项目名称']
+                    requirements.append(project_info)
     
     # 生成各种表格
     stats_table = generate_stats_table(stats)
