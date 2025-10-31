@@ -75,16 +75,34 @@ async def main(args: Args) -> Output:
             "summary_stats": ""
         }
     
-    # 获取上个月的时间戳范围（毫秒）
+    # 获取目标月份的时间戳范围（毫秒）
     today = datetime.now()
-    first_day_this_month = datetime(today.year, today.month, 1)
-    last_day_last_month = first_day_this_month - timedelta(days=1)
-    first_day_last_month = datetime(last_day_last_month.year, last_day_last_month.month, 1)
-    start_timestamp = int(first_day_last_month.timestamp() * 1000)
-    end_timestamp = int(first_day_this_month.timestamp() * 1000)
+    
+    # 判断应该生成哪个月的月报
+    # 如果当前日期是当月的最后10天（day > 20），获取当月数据
+    # 如果日期是月初20天内（day <= 20），获取上个月数据
+    if today.day > 20:
+        # 获取当月数据
+        target_month = today
+        first_day_target_month = datetime(today.year, today.month, 1)
+        # 计算下个月的第一天
+        if today.month == 12:
+            first_day_next_month = datetime(today.year + 1, 1, 1)
+        else:
+            first_day_next_month = datetime(today.year, today.month + 1, 1)
+        start_timestamp = int(first_day_target_month.timestamp() * 1000)
+        end_timestamp = int(first_day_next_month.timestamp() * 1000)
+    else:
+        # 获取上个月数据
+        first_day_this_month = datetime(today.year, today.month, 1)
+        last_day_last_month = first_day_this_month - timedelta(days=1)
+        target_month = last_day_last_month
+        first_day_target_month = datetime(target_month.year, target_month.month, 1)
+        start_timestamp = int(first_day_target_month.timestamp() * 1000)
+        end_timestamp = int(first_day_this_month.timestamp() * 1000)
     
     # 生成月报标题
-    report_title = f"数智化中心软研月报（{last_day_last_month.strftime('%Y年%m月')}）"
+    report_title = f"数智化中心软研月报（{target_month.strftime('%Y年%m月')}）"
     
     # 初始化统计数据
     stats = {
@@ -145,6 +163,18 @@ async def main(args: Args) -> Output:
             # 组合成字符串
             result_str = f"（{filtered_count}）{project_name}\n最新进展记录：{latest_text}\n上月进展记录：{last_month_text}"
             result_list.append(result_str)
+            
+            # 判断是否为子项目（父记录不为空）
+            parent_record = fields.get('父记录')
+            is_sub_project = False
+            if parent_record and isinstance(parent_record, dict):
+                link_ids = parent_record.get('link_record_ids')
+                if link_ids and len(link_ids) > 0:
+                    is_sub_project = True
+            
+            # 如果是子项目，不参与任何统计
+            if is_sub_project:
+                continue
             
             # 统计上个月更新的项目
             project_type = fields.get('项目类型', '')
@@ -216,7 +246,7 @@ async def main(args: Args) -> Output:
     requirement_table = generate_requirement_table(requirements)
     
     # 生成统计概述
-    summary_stats = f"""时间：{last_day_last_month.strftime('%Y年%m月')}
+    summary_stats = f"""时间：{target_month.strftime('%Y年%m月')}
 项目总数：{total_count}
 售中项目数：{sell_count}
 售前项目数：{presale_count}
@@ -228,9 +258,9 @@ async def main(args: Args) -> Output:
 大模型项目数：{ai_count}
 RPA项目数：{rpa_count}"""
     
-    # 如果没有找到上月更新的记录
+    # 如果没有找到目标月份更新的记录
     if filtered_count == 0:
-        result_list.append(f"未找到上个月（{first_day_last_month.strftime('%Y年%m月')}）更新的记录")
+        result_list.append(f"未找到目标月份（{target_month.strftime('%Y年%m月')}）更新的记录")
     
     # 返回结果
     ret: Output = {
